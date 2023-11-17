@@ -522,7 +522,7 @@ func (ConfigQemu) mapToStruct(params map[string]interface{}) (*ConfigQemu, error
 			config.Memory = int(params["memory"].(float64))
 		case string:
 			memoryStr := params["memory"].(string)
-			memory2, err := strconv.ParseFloat(memorytStr, 64)
+			memory2, err := strconv.ParseFloat(memoryStr, 64)
 			if err != nil {
 				log.Fatal(err)
 				return nil, err
