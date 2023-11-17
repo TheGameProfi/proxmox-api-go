@@ -517,11 +517,11 @@ func (ConfigQemu) mapToStruct(params map[string]interface{}) (*ConfigQemu, error
 		config.Hookscript = params["hookscript"].(string)
 	}
 	if _, isSet := params["memory"]; isSet {
-		switch vmConfig["memory"].(type) {
+		switch params["memory"].(type) {
 		case float64:
-			memory = vmConfig["memory"].(float64)
+			memory = params["memory"].(float64)
 		case string:
-			memory2, err := strconv.ParseFloat(vmConfig["memory"].(string), 64)
+			memory2, err := strconv.ParseFloat(params["memory"].(string), 64)
 			if err != nil {
 				log.Fatal(err)
 				return nil, err
