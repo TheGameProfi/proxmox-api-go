@@ -1461,7 +1461,7 @@ func (c ConfigQemu) CreateQemuNetworksParams(params map[string]interface{}) {
 			macaddr := make(net.HardwareAddr, 6)
 			rand.Seed(time.Now().UnixNano())
 			rand.Read(macaddr)
-			macaddr[0] = (macaddr[0] | 2) & 0xfe // fix from github issue #18
+			macaddr[0] = (macaddr[0] | 2) & 0xfe 
 			macAddr = strings.ToUpper(fmt.Sprintf("%v", macaddr))
 
 			// Add Mac to source map so it will be returned. (useful for some use case like Terraform)
