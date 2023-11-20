@@ -3,7 +3,7 @@ package cli_pool_test
 import (
 	"testing"
 
-	cliTest "github.com/Telmate/proxmox-api-go/test/cli"
+	cliTest "github.com/TheGameProfi/proxmox-api-go/test/cli"
 )
 
 // Test0

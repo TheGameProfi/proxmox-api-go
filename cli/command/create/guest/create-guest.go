@@ -3,9 +3,9 @@ package guest
 import (
 	"strconv"
 
-	"github.com/Telmate/proxmox-api-go/cli"
-	"github.com/Telmate/proxmox-api-go/cli/command/create"
-	"github.com/Telmate/proxmox-api-go/proxmox"
+	"github.com/TheGameProfi/proxmox-api-go/cli"
+	"github.com/TheGameProfi/proxmox-api-go/cli/command/create"
+	"github.com/TheGameProfi/proxmox-api-go/proxmox"
 	"github.com/spf13/cobra"
 )
 

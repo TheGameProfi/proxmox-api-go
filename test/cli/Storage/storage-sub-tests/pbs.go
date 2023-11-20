@@ -1,7 +1,7 @@
 package storagesubtests
 
 import (
-	"github.com/Telmate/proxmox-api-go/proxmox"
+	"github.com/TheGameProfi/proxmox-api-go/proxmox"
 )
 
 var PBSFull = proxmox.ConfigStorage{

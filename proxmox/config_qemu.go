@@ -517,7 +517,19 @@ func (ConfigQemu) mapToStruct(params map[string]interface{}) (*ConfigQemu, error
 		config.Hookscript = params["hookscript"].(string)
 	}
 	if _, isSet := params["memory"]; isSet {
-		config.Memory = int(params["memory"].(float64))
+		switch params["memory"].(type) {
+		case float64:
+			config.Memory = int(params["memory"].(float64))
+		case string:
+			memoryStr := params["memory"].(string)
+			memory2, err := strconv.ParseFloat(memoryStr, 64)
+			if err != nil {
+				log.Fatal(err)
+				return nil, err
+			} else {
+				config.Memory = int(memory2)
+			}
+		}
 	}
 	if _, isSet := params["name"]; isSet {
 		config.Name = params["name"].(string)
@@ -1449,7 +1461,7 @@ func (c ConfigQemu) CreateQemuNetworksParams(params map[string]interface{}) {
 			macaddr := make(net.HardwareAddr, 6)
 			rand.Seed(time.Now().UnixNano())
 			rand.Read(macaddr)
-			macaddr[0] = (macaddr[0] | 2) & 0xfe // fix from github issue #18
+			macaddr[0] = (macaddr[0] | 2) & 0xfe 
 			macAddr = strings.ToUpper(fmt.Sprintf("%v", macaddr))
 
 			// Add Mac to source map so it will be returned. (useful for some use case like Terraform)

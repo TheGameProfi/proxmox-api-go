@@ -3,7 +3,7 @@ package api_test
 import (
 	"crypto/tls"
 
-	pxapi "github.com/Telmate/proxmox-api-go/proxmox"
+	pxapi "github.com/TheGameProfi/proxmox-api-go/proxmox"
 )
 
 type Test struct {
