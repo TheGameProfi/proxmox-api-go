@@ -48,7 +48,6 @@ type ConfigQemu struct {
 	Description     string        `json:"description,omitempty"`
 	Disks           *QemuStorages `json:"disks,omitempty"`
 	EFIDisk         QemuDevice    `json:"efidisk,omitempty"`   // TODO should be a struct
-	RNGDrive        QemuDevice    `json:"rng0,omitempty"`      // TODO should be a struct
 	FullClone       *int          `json:"fullclone,omitempty"` // TODO should probably be a bool
 	HaGroup         string        `json:"hagroup,omitempty"`
 	HaState         string        `json:"hastate,omitempty"` // TODO should be custom type with enum
@@ -80,6 +79,7 @@ type ConfigQemu struct {
 	QemuUsbs        QemuDevices   `json:"usb,omitempty"`          // TODO should be a struct
 	QemuVcpus       int           `json:"vcpus,omitempty"`        // TODO should be uint
 	QemuVga         QemuDevice    `json:"vga,omitempty"`          // TODO should be a struct
+	RNGDrive        QemuDevice    `json:"rng0,omitempty"`         // TODO should be a struct
 	Scsihw          string        `json:"scsihw,omitempty"`       // TODO should be custom type with enum
 	Searchdomain    string        `json:"searchdomain,omitempty"` // TODO should be part of a cloud-init struct (cloud-init option)
 	Smbios1         string        `json:"smbios1,omitempty"`      // TODO should be custom type with enum?
@@ -521,14 +521,11 @@ func (ConfigQemu) mapToStruct(params map[string]interface{}) (*ConfigQemu, error
 		case float64:
 			config.Memory = int(params["memory"].(float64))
 		case string:
-			memoryStr := params["memory"].(string)
-			memory2, err := strconv.ParseFloat(memoryStr, 64)
+			mem, err := strconv.ParseFloat(params["memory"].(string), 64)
 			if err != nil {
-				log.Fatal(err)
 				return nil, err
-			} else {
-				config.Memory = int(memory2)
 			}
+			config.Memory = int(mem)
 		}
 	}
 	if _, isSet := params["name"]; isSet {
@@ -800,6 +797,15 @@ func (ConfigQemu) mapToStruct(params map[string]interface{}) (*ConfigQemu, error
 				config.QemuPCIDevices[hostPCIID] = hostPCIConfMap
 			}
 		}
+	}
+
+	// efidisk
+	if efidisk, isSet := params["efidisk0"].(string); isSet {
+		efiDiskConfMap := ParsePMConf(efidisk, "volume")
+		storageName, fileName := ParseSubConf(efiDiskConfMap["volume"].(string), ":")
+		efiDiskConfMap["storage"] = storageName
+		efiDiskConfMap["file"] = fileName
+		config.EFIDisk = efiDiskConfMap
 	}
 
 	return &config, nil
@@ -1392,7 +1398,9 @@ func FormatDiskParam(disk QemuDevice) string {
 
 	if volume, ok := disk["volume"]; ok && volume != "" {
 		diskConfParam = append(diskConfParam, volume.(string))
-		diskConfParam = append(diskConfParam, fmt.Sprintf("size=%v", disk["size"]))
+		if size, ok := disk["size"]; ok && size != "" {
+			diskConfParam = append(diskConfParam, fmt.Sprintf("size=%v", disk["size"]))
+		}
 	} else {
 		volumeInit := fmt.Sprintf("%v:%v", disk["storage"], DiskSizeGB(disk["size"]))
 		diskConfParam = append(diskConfParam, volumeInit)
@@ -1461,7 +1469,7 @@ func (c ConfigQemu) CreateQemuNetworksParams(params map[string]interface{}) {
 			macaddr := make(net.HardwareAddr, 6)
 			rand.Seed(time.Now().UnixNano())
 			rand.Read(macaddr)
-			macaddr[0] = (macaddr[0] | 2) & 0xfe 
+			macaddr[0] = (macaddr[0] | 2) & 0xfe
 			macAddr = strings.ToUpper(fmt.Sprintf("%v", macaddr))
 
 			// Add Mac to source map so it will be returned. (useful for some use case like Terraform)

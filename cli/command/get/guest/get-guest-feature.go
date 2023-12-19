@@ -1,4 +1,4 @@
-package get
+package guest
 
 import (
 	"github.com/TheGameProfi/proxmox-api-go/cli"
@@ -6,9 +6,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var get_guestCmd = &cobra.Command{
-	Use:   "guest GUESTID",
-	Short: "Gets the configuration of the specified guest",
+var featureCmd = &cobra.Command{
+	Use:   "feature GUESTID",
+	Short: "Gets the available features of the specified guest",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		id := cli.ValidateIntIDset(args, "GuestID")
@@ -18,22 +18,15 @@ var get_guestCmd = &cobra.Command{
 		if err != nil {
 			return
 		}
-		vmType := vmr.GetVmType()
-		var config interface{}
-		switch vmType {
-		case "qemu":
-			config, err = proxmox.NewConfigQemuFromApi(vmr, c)
-		case "lxc":
-			config, err = proxmox.NewConfigLxcFromApi(vmr, c)
-		}
+		features, err := proxmox.ListGuestFeatures(vmr, c)
 		if err != nil {
 			return
 		}
-		cli.PrintFormattedJson(GetCmd.OutOrStdout(), config)
+		cli.PrintFormattedJson(guestCmd.OutOrStdout(), features)
 		return
 	},
 }
 
 func init() {
-	GetCmd.AddCommand(get_guestCmd)
+	guestCmd.AddCommand(featureCmd)
 }

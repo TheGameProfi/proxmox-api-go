@@ -34,6 +34,10 @@ type Client struct {
 	TaskTimeout int
 }
 
+const (
+	VmRef_Error_Nil string = "vm reference may not be nil"
+)
+
 // VmRef - virtual machine ref parts
 // map[type:qemu node:proxmox1-xx id:qemu/132 diskread:5.57424738e+08 disk:0 netin:5.9297450593e+10 mem:3.3235968e+09 uptime:1.4567097e+07 vmid:132 template:0 maxcpu:2 netout:6.053310416e+09 maxdisk:3.4359738368e+10 maxmem:8.592031744e+09 diskwrite:1.49663619584e+12 status:running cpu:0.00386980694947209 name:appt-app1-dev.xxx.xx]
 type VmRef struct {
@@ -177,6 +181,9 @@ func (c *Client) GetVmList() (map[string]interface{}, error) {
 }
 
 func (c *Client) CheckVmRef(vmr *VmRef) (err error) {
+	if vmr == nil {
+		return errors.New(VmRef_Error_Nil)
+	}
 	if vmr.node == "" || vmr.vmType == "" {
 		_, err = c.GetVmInfo(vmr)
 	}
@@ -239,6 +246,35 @@ func (c *Client) GetVmRefsByName(vmName string) (vmrs []*VmRef, err error) {
 	}
 	if len(vmrs) == 0 {
 		return nil, fmt.Errorf("vm '%s' not found", vmName)
+	} else {
+		return
+	}
+}
+
+func (c *Client) GetVmRefById(vmId int) (vmr *VmRef, err error) {
+	var exist bool = false
+	vms, err := c.GetResourceList(resourceListGuest)
+	if err != nil {
+		return
+	}
+	for vmii := range vms {
+		vm := vms[vmii].(map[string]interface{})
+		if int(vm["vmid"].(float64)) != 0 && int(vm["vmid"].(float64)) == vmId {
+			vmr = NewVmRef(int(vm["vmid"].(float64)))
+			vmr.node = vm["node"].(string)
+			vmr.vmType = vm["type"].(string)
+			vmr.pool = ""
+			if vm["pool"] != nil {
+				vmr.pool = vm["pool"].(string)
+			}
+			if vm["hastate"] != nil {
+				vmr.haState = vm["hastate"].(string)
+			}
+			return
+		}
+	}
+	if !exist {
+		return nil, fmt.Errorf("vm 'id-%d' not found", vmId)
 	} else {
 		return
 	}
@@ -501,6 +537,10 @@ func (c *Client) ResetVm(vmr *VmRef) (exitStatus string, err error) {
 	return c.StatusChangeVm(vmr, nil, "reset")
 }
 
+func (c *Client) RebootVm(vmr *VmRef) (exitStatus string, err error) {
+	return c.StatusChangeVm(vmr, nil, "reboot")
+}
+
 func (c *Client) PauseVm(vmr *VmRef) (exitStatus string, err error) {
 	return c.StatusChangeVm(vmr, nil, "suspend")
 }
@@ -684,7 +724,7 @@ func (c *Client) CreateQemuSnapshot(vmr *VmRef, snapshotName string) (exitStatus
 
 // DEPRECATED superseded by DeleteSnapshot()
 func (c *Client) DeleteQemuSnapshot(vmr *VmRef, snapshotName string) (exitStatus string, err error) {
-	return DeleteSnapshot(c, vmr, snapshotName)
+	return DeleteSnapshot(c, vmr, SnapshotName(snapshotName))
 }
 
 // DEPRECATED superseded by ListSnapshots()
@@ -840,6 +880,23 @@ func (c *Client) MoveQemuDiskToVM(vmrSource *VmRef, disk string, vmrTarget *VmRe
 		}
 	}
 	return
+}
+
+func (c *Client) Unlink(node string, vmId int, diskIds string, forceRemoval bool) (exitStatus string, err error) {
+	url := fmt.Sprintf("/nodes/%s/qemu/%d/unlink", node, vmId)
+	data := ParamsToBody(map[string]interface{}{
+		"idlist": diskIds,
+		"force":  forceRemoval,
+	})
+	resp, err := c.session.Put(url, nil, nil, &data)
+	if err != nil {
+		return c.HandleTaskError(resp), err
+	}
+	json, err := ResponseJSON(resp)
+	if err != nil {
+		return "", err
+	}
+	return c.WaitForCompletion(json)
 }
 
 // GetNextID - Get next free VMID
