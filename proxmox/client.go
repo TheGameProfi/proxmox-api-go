@@ -805,7 +805,7 @@ func (c *Client) ResizeQemuDisk(vmr *VmRef, disk string, moreSizeGB int) (exitSt
 func (c *Client) ResizeQemuDiskRaw(vmr *VmRef, disk string, size string) (exitStatus interface{}, err error) {
 	// PUT
 	//disk:virtio0
-	//size:+2G
+	// size:+2G
 	if disk == "" {
 		disk = "virtio0"
 	}
@@ -882,6 +882,8 @@ func (c *Client) MoveQemuDiskToVM(vmrSource *VmRef, disk string, vmrTarget *VmRe
 	return
 }
 
+// Unlink - Unlink (detach) a set of disks from a VM.
+// Reference: https://pve.proxmox.com/pve-docs/api-viewer/index.html#/nodes/{node}/qemu/{vmid}/unlink
 func (c *Client) Unlink(node string, vmId int, diskIds string, forceRemoval bool) (exitStatus string, err error) {
 	url := fmt.Sprintf("/nodes/%s/qemu/%d/unlink", node, vmId)
 	data := ParamsToBody(map[string]interface{}{
@@ -1686,7 +1688,7 @@ func (c *Client) GetUserPermissions(id UserID, path string) (permissions []strin
 	if !existence {
 		return nil, fmt.Errorf("cannot get user (%s) permissions, the user does not exist", id)
 	}
-	permlist, err := c.GetItemList("/access/permissions?userid=" + id.ToString() + "&path=" + path)
+	permlist, err := c.GetItemList("/access/permissions?userid=" + id.String() + "&path=" + path)
 	failError(err)
 	data := permlist["data"].(map[string]interface{})
 	for pth, prm := range data {
