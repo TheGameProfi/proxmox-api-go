@@ -95,11 +95,11 @@ type qemuCdRom struct {
 }
 
 func (qemuCdRom) mapToStruct(diskData string, settings map[string]interface{}) *qemuCdRom {
-	var isCdRom bool
 	if setting, isSet := settings["media"]; isSet {
-		isCdRom = setting.(string) == "cdrom"
-	}
-	if !isCdRom {
+		if setting.(string) != "cdrom" {
+			return nil
+		}
+	} else {
 		return nil
 	}
 	if _, isSet := settings["none"]; isSet {
@@ -111,7 +111,14 @@ func (qemuCdRom) mapToStruct(diskData string, settings map[string]interface{}) *
 	tmpStorage := strings.Split(diskData, ":")
 	if len(tmpStorage) > 1 {
 		tmpFile := strings.Split(diskData, "/")
-		if len(tmpFile) == 2 {
+		switch len(tmpFile) {
+		case 1:
+			return &qemuCdRom{
+				Storage: tmpStorage[0],
+				File:    tmpStorage[1],
+				Format:  QemuDiskFormat_Raw,
+			}
+		case 2:
 			tmpFileType := strings.Split(tmpFile[1], ".")
 			if len(tmpFileType) > 1 {
 				fileType := QemuDiskFormat(tmpFileType[len(tmpFileType)-1])
@@ -299,17 +306,17 @@ func (disk qemuDisk) mapToApiValues(vmID, LinkedVmId uint, currentStorage string
 	}
 
 	if disk.Bandwidth.MBps.ReadLimit.Concurrent != 0 {
-		settings = settings + fmt.Sprintf(",mbps_rd=%.2f", disk.Bandwidth.MBps.ReadLimit.Concurrent)
+		settings = settings + ",mbps_rd=" + floatToTrimmedString(float64(disk.Bandwidth.MBps.ReadLimit.Concurrent), 2)
 	}
 	if disk.Bandwidth.MBps.ReadLimit.Burst != 0 {
-		settings = settings + fmt.Sprintf(",mbps_rd_max=%.2f", disk.Bandwidth.MBps.ReadLimit.Burst)
+		settings = settings + ",mbps_rd_max=" + floatToTrimmedString(float64(disk.Bandwidth.MBps.ReadLimit.Burst), 2)
 	}
 
 	if disk.Bandwidth.MBps.WriteLimit.Concurrent != 0 {
-		settings = settings + fmt.Sprintf(",mbps_wr=%.2f", disk.Bandwidth.MBps.WriteLimit.Concurrent)
+		settings = settings + ",mbps_wr=" + floatToTrimmedString(float64(disk.Bandwidth.MBps.WriteLimit.Concurrent), 2)
 	}
 	if disk.Bandwidth.MBps.WriteLimit.Burst != 0 {
-		settings = settings + fmt.Sprintf(",mbps_wr_max=%.2f", disk.Bandwidth.MBps.WriteLimit.Burst)
+		settings = settings + ",mbps_wr_max=" + floatToTrimmedString(float64(disk.Bandwidth.MBps.WriteLimit.Burst), 2)
 	}
 
 	if !disk.Replicate {
