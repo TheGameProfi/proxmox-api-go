@@ -1,5 +1,11 @@
 # Proxmox API Go
 
+> [!CAUTION]
+> This Repo is now deprecated since the Original is Maintained again and has all the Fixes that are included here.
+> Please Switch Back to the Main Repo to have all the Latest Updates
+> https://github.com/telmate/proxmox-api-go
+
+
 Proxmox API in golang. For /api2/json. Work in progress.
 
 Starting with Proxmox 5.2 you can use cloud-init options.
